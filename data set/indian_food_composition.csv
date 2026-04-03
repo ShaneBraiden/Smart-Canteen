@@ -1,0 +1,144 @@
+Food_Item,Calories,Protein,Carbs,Fats,Is_Veg,Common_Allergens,Price,Category,Cuisine
+Idli (2 pcs),150,4.0,30.0,0.5,Yes,None,25,Breakfast,South Indian
+Dosa (Plain),170,4.5,30.0,4.0,Yes,None,30,Breakfast,South Indian
+Masala Dosa,250,6.0,40.0,8.0,Yes,None,45,Breakfast,South Indian
+Vada (2 pcs),290,6.0,25.0,18.0,Yes,None,25,Breakfast,South Indian
+Upma,200,5.0,35.0,5.0,Yes,Gluten,30,Breakfast,South Indian
+Poha,250,5.0,45.0,6.0,Yes,None,25,Breakfast,North Indian
+Paratha (Plain),260,6.0,35.0,12.0,Yes,Gluten,30,Breakfast,North Indian
+Aloo Paratha,320,7.0,40.0,14.0,Yes,Gluten,40,Breakfast,North Indian
+Puri Bhaji,350,8.0,50.0,14.0,Yes,Gluten,35,Breakfast,North Indian
+Chole Bhature,450,12.0,55.0,20.0,Yes,Gluten,60,Breakfast,North Indian
+Uttapam,220,6.0,35.0,6.0,Yes,None,35,Breakfast,South Indian
+Pongal,280,8.0,45.0,8.0,Yes,None,40,Breakfast,South Indian
+Sambar Vada,320,8.0,40.0,14.0,Yes,None,35,Breakfast,South Indian
+Medu Vada,180,5.0,22.0,8.0,Yes,None,20,Breakfast,South Indian
+Bread Omelette,280,14.0,25.0,14.0,No,Gluten Eggs,35,Breakfast,Multi-Cuisine
+Egg Bhurji,220,16.0,5.0,16.0,No,Eggs,40,Breakfast,North Indian
+Boiled Eggs (2),140,12.0,1.0,10.0,No,Eggs,20,Breakfast,Multi-Cuisine
+Poori (4 pcs),320,6.0,40.0,16.0,Yes,Gluten,30,Breakfast,North Indian
+Sambar Rice,320,10.0,55.0,6.0,Yes,None,50,Lunch,South Indian
+Curd Rice,280,8.0,50.0,5.0,Yes,Dairy,40,Lunch,South Indian
+Lemon Rice,300,6.0,55.0,6.0,Yes,None,40,Lunch,South Indian
+Tamarind Rice,310,5.0,58.0,6.0,Yes,None,40,Lunch,South Indian
+Veg Biryani,400,10.0,65.0,12.0,Yes,None,70,Lunch,Hyderabadi
+Chicken Biryani,550,28.0,55.0,22.0,No,None,120,Lunch,Hyderabadi
+Mutton Biryani,620,32.0,55.0,28.0,No,None,150,Lunch,Hyderabadi
+Egg Biryani,450,18.0,55.0,16.0,No,Eggs,80,Lunch,Hyderabadi
+Veg Fried Rice,380,8.0,60.0,12.0,Yes,Soy,55,Lunch,Chinese
+Chicken Fried Rice,480,22.0,55.0,18.0,No,Soy,85,Lunch,Chinese
+Egg Fried Rice,400,14.0,55.0,14.0,No,Eggs Soy,65,Lunch,Chinese
+Veg Pulao,320,7.0,55.0,8.0,Yes,None,50,Lunch,North Indian
+Jeera Rice,280,5.0,52.0,6.0,Yes,None,40,Lunch,North Indian
+Plain Rice,200,4.0,45.0,0.5,Yes,None,25,Lunch,Multi-Cuisine
+Dal Rice,300,12.0,50.0,6.0,Yes,None,45,Lunch,North Indian
+Rajma Rice,380,14.0,55.0,10.0,Yes,None,55,Lunch,North Indian
+Kadhi Rice,320,10.0,50.0,8.0,Yes,Dairy,50,Lunch,North Indian
+Veg Thali,550,15.0,80.0,18.0,Yes,Dairy Gluten,80,Lunch,North Indian
+Non-Veg Thali,700,35.0,75.0,28.0,No,Dairy Gluten,120,Lunch,North Indian
+Mini Meals (Veg),400,12.0,60.0,12.0,Yes,Dairy,60,Lunch,South Indian
+Meals (Full - Veg),520,15.0,80.0,14.0,Yes,Dairy,70,Lunch,South Indian
+Chapati (2 pcs),180,6.0,35.0,2.0,Yes,Gluten,15,Lunch,North Indian
+Roti (2 pcs),170,5.5,32.0,2.0,Yes,Gluten,15,Lunch,North Indian
+Naan,260,8.0,45.0,6.0,Yes,Gluten Dairy,25,Lunch,North Indian
+Butter Naan,320,8.0,45.0,12.0,Yes,Gluten Dairy,35,Lunch,North Indian
+Garlic Naan,300,8.0,46.0,10.0,Yes,Gluten Dairy,35,Lunch,North Indian
+Kulcha,280,7.0,42.0,9.0,Yes,Gluten Dairy,30,Lunch,North Indian
+Dal Fry,180,10.0,25.0,5.0,Yes,None,40,Lunch,North Indian
+Dal Tadka,200,11.0,26.0,6.0,Yes,None,45,Lunch,North Indian
+Dal Makhani,280,12.0,28.0,14.0,Yes,Dairy,60,Lunch,North Indian
+Paneer Butter Masala,380,18.0,15.0,28.0,Yes,Dairy Nuts,100,Lunch,North Indian
+Shahi Paneer,400,17.0,18.0,30.0,Yes,Dairy Nuts,110,Lunch,North Indian
+Palak Paneer,320,16.0,12.0,24.0,Yes,Dairy,90,Lunch,North Indian
+Matar Paneer,300,15.0,18.0,20.0,Yes,Dairy,85,Lunch,North Indian
+Kadai Paneer,350,16.0,14.0,26.0,Yes,Dairy,95,Lunch,North Indian
+Paneer Tikka Masala,380,18.0,16.0,28.0,Yes,Dairy,105,Lunch,North Indian
+Chana Masala,220,12.0,35.0,4.0,Yes,None,50,Lunch,North Indian
+Rajma Masala,240,13.0,38.0,4.5,Yes,None,55,Lunch,North Indian
+Aloo Gobi,180,5.0,28.0,6.0,Yes,None,45,Lunch,North Indian
+Aloo Matar,200,6.0,30.0,6.0,Yes,None,45,Lunch,North Indian
+Mix Veg,220,7.0,25.0,10.0,Yes,None,55,Lunch,North Indian
+Bhindi Masala,180,4.0,20.0,10.0,Yes,None,50,Lunch,North Indian
+Baingan Bharta,200,5.0,22.0,10.0,Yes,None,50,Lunch,North Indian
+Chicken Curry,350,30.0,12.0,22.0,No,None,100,Lunch,North Indian
+Butter Chicken,450,32.0,15.0,30.0,No,Dairy Nuts,130,Lunch,North Indian
+Chicken Tikka Masala,400,30.0,14.0,26.0,No,Dairy,120,Lunch,North Indian
+Kadai Chicken,380,28.0,12.0,26.0,No,None,110,Lunch,North Indian
+Chicken Do Pyaza,360,28.0,14.0,22.0,No,None,105,Lunch,North Indian
+Egg Curry,280,18.0,12.0,18.0,No,Eggs,70,Lunch,North Indian
+Mutton Curry,480,35.0,10.0,35.0,No,None,150,Lunch,North Indian
+Mutton Rogan Josh,500,36.0,12.0,36.0,No,None,160,Lunch,North Indian
+Fish Curry,320,28.0,10.0,20.0,No,Fish,130,Lunch,Coastal
+Fish Fry,350,26.0,15.0,22.0,No,Fish,120,Lunch,Coastal
+Prawn Curry,340,30.0,8.0,22.0,No,Shellfish,150,Lunch,Coastal
+Veg Noodles,350,8.0,55.0,12.0,Yes,Gluten Soy,50,Lunch,Chinese
+Chicken Noodles,420,20.0,50.0,16.0,No,Gluten Soy,75,Lunch,Chinese
+Veg Manchurian,300,6.0,40.0,14.0,Yes,Gluten Soy,55,Lunch,Chinese
+Gobi Manchurian,280,5.0,35.0,14.0,Yes,Gluten Soy,50,Lunch,Chinese
+Chicken Manchurian,380,22.0,35.0,18.0,No,Gluten Soy,90,Lunch,Chinese
+Veg Momos (6 pcs),250,8.0,40.0,6.0,Yes,Gluten,40,Snacks,Chinese
+Chicken Momos (6 pcs),300,18.0,35.0,10.0,No,Gluten,60,Snacks,Chinese
+Samosa (2 pcs),300,5.0,35.0,16.0,Yes,Gluten,20,Snacks,North Indian
+Kachori (2 pcs),350,6.0,40.0,18.0,Yes,Gluten,25,Snacks,North Indian
+Pakora (plate),280,6.0,30.0,16.0,Yes,Gluten,30,Snacks,North Indian
+Bhel Puri,220,5.0,40.0,6.0,Yes,Gluten,25,Snacks,Mumbai
+Pani Puri (6 pcs),180,3.0,35.0,4.0,Yes,Gluten,25,Snacks,Mumbai
+Sev Puri,200,4.0,35.0,6.0,Yes,Gluten,30,Snacks,Mumbai
+Dahi Puri,220,5.0,35.0,8.0,Yes,Gluten Dairy,30,Snacks,Mumbai
+Ragda Pattice,280,8.0,45.0,8.0,Yes,Gluten,35,Snacks,Mumbai
+Pav Bhaji,400,10.0,55.0,16.0,Yes,Gluten Dairy,50,Snacks,Mumbai
+Vada Pav,300,6.0,40.0,14.0,Yes,Gluten,25,Snacks,Mumbai
+Misal Pav,380,14.0,50.0,14.0,Yes,Gluten,45,Snacks,Mumbai
+Dabeli,280,6.0,45.0,10.0,Yes,Gluten Nuts,30,Snacks,Gujarat
+Aloo Tikki,220,4.0,35.0,8.0,Yes,None,25,Snacks,North Indian
+Bread Pakora,260,6.0,30.0,14.0,Yes,Gluten,25,Snacks,North Indian
+Cutlet (Veg),200,5.0,25.0,10.0,Yes,Gluten,25,Snacks,Multi-Cuisine
+Cutlet (Chicken),250,15.0,20.0,12.0,No,Gluten,40,Snacks,Multi-Cuisine
+Spring Roll (Veg),220,4.0,30.0,10.0,Yes,Gluten Soy,35,Snacks,Chinese
+Spring Roll (Chicken),280,12.0,28.0,14.0,No,Gluten Soy,50,Snacks,Chinese
+French Fries,320,4.0,40.0,16.0,Yes,None,40,Snacks,Western
+Sandwich (Veg),280,8.0,35.0,12.0,Yes,Gluten Dairy,40,Snacks,Western
+Sandwich (Chicken),350,18.0,30.0,16.0,No,Gluten,60,Snacks,Western
+Grilled Sandwich,320,10.0,32.0,16.0,Yes,Gluten Dairy,50,Snacks,Western
+Burger (Veg),380,10.0,45.0,18.0,Yes,Gluten,60,Snacks,Western
+Burger (Chicken),450,22.0,40.0,22.0,No,Gluten,90,Snacks,Western
+Pizza Slice (Veg),280,10.0,35.0,12.0,Yes,Gluten Dairy,50,Snacks,Western
+Pizza Slice (Non-Veg),350,15.0,35.0,18.0,No,Gluten Dairy,70,Snacks,Western
+Maggi,380,8.0,55.0,14.0,Yes,Gluten,30,Snacks,Multi-Cuisine
+Tea,50,1.0,8.0,2.0,Yes,Dairy,10,Beverages,Multi-Cuisine
+Coffee,80,2.0,10.0,3.0,Yes,Dairy,15,Beverages,Multi-Cuisine
+Lassi (Sweet),200,6.0,30.0,6.0,Yes,Dairy,30,Beverages,North Indian
+Lassi (Salt),150,6.0,18.0,6.0,Yes,Dairy,25,Beverages,North Indian
+Buttermilk,60,3.0,8.0,2.0,Yes,Dairy,15,Beverages,South Indian
+Mango Lassi,280,6.0,50.0,6.0,Yes,Dairy,40,Beverages,North Indian
+Fresh Lime Soda,80,0.0,20.0,0.0,Yes,None,20,Beverages,Multi-Cuisine
+Coconut Water,50,1.0,10.0,0.5,Yes,None,30,Beverages,South Indian
+Fruit Juice,120,1.0,28.0,0.5,Yes,None,35,Beverages,Multi-Cuisine
+Milkshake,280,8.0,45.0,8.0,Yes,Dairy,50,Beverages,Western
+Cold Coffee,200,4.0,35.0,6.0,Yes,Dairy,40,Beverages,Western
+Badam Milk,220,7.0,30.0,8.0,Yes,Dairy Nuts,35,Beverages,North Indian
+Gulab Jamun (2 pcs),300,4.0,50.0,12.0,Yes,Dairy Gluten,30,Desserts,North Indian
+Rasgulla (2 pcs),220,4.0,45.0,4.0,Yes,Dairy,25,Desserts,Bengali
+Kheer,250,6.0,40.0,8.0,Yes,Dairy Nuts,35,Desserts,North Indian
+Payasam,280,5.0,50.0,8.0,Yes,Dairy Nuts,40,Desserts,South Indian
+Jalebi (100g),400,4.0,70.0,14.0,Yes,Gluten,30,Desserts,North Indian
+Mysore Pak,480,6.0,50.0,30.0,Yes,Dairy,40,Desserts,South Indian
+Ladoo (2 pcs),350,5.0,55.0,14.0,Yes,Dairy,25,Desserts,North Indian
+Halwa,380,4.0,55.0,18.0,Yes,Dairy Nuts,35,Desserts,North Indian
+Ice Cream,200,3.0,25.0,10.0,Yes,Dairy,40,Desserts,Western
+Kulfi,220,4.0,28.0,10.0,Yes,Dairy Nuts,35,Desserts,North Indian
+Fruit Salad,120,2.0,28.0,0.5,Yes,None,40,Desserts,Multi-Cuisine
+Banana,90,1.0,23.0,0.3,Yes,None,10,Fruits,Multi-Cuisine
+Apple,95,0.5,25.0,0.3,Yes,None,20,Fruits,Multi-Cuisine
+Orange,60,1.0,15.0,0.2,Yes,None,15,Fruits,Multi-Cuisine
+Pomegranate,140,2.5,30.0,1.0,Yes,None,40,Fruits,Multi-Cuisine
+Sprouts Salad,150,10.0,22.0,2.0,Yes,None,35,Healthy,Multi-Cuisine
+Boiled Chana,160,9.0,27.0,2.5,Yes,None,25,Healthy,North Indian
+Oats Porridge,180,6.0,32.0,4.0,Yes,Gluten,35,Healthy,Western
+Muesli with Milk,300,10.0,50.0,8.0,Yes,Gluten Dairy Nuts,50,Healthy,Western
+Ragi Dosa,180,5.0,35.0,3.0,Yes,None,35,Healthy,South Indian
+Vegetable Soup,80,3.0,12.0,2.0,Yes,None,30,Healthy,Multi-Cuisine
+Chicken Soup,120,10.0,8.0,5.0,No,None,45,Healthy,Multi-Cuisine
+Grilled Chicken,220,35.0,2.0,8.0,No,None,100,Healthy,Western
+Paneer Tikka (6 pcs),280,18.0,10.0,20.0,Yes,Dairy,80,Healthy,North Indian
+Tandoori Chicken,320,38.0,5.0,16.0,No,None,120,Healthy,North Indian

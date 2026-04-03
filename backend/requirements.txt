@@ -1,0 +1,35 @@
+# Flask and Server
+flask==3.0.0
+flask-cors==4.0.0
+flask-jwt-extended==4.6.0
+python-dotenv==1.0.0
+gunicorn==21.2.0
+
+# Database - MongoDB
+pymongo==4.6.1
+flask-pymongo==2.3.0
+
+# Authentication
+passlib[bcrypt]==1.7.4
+bcrypt==3.2.2
+
+# Validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+email-validator==2.1.0
+marshmallow==3.20.1
+
+# ML & Data Processing
+numpy==1.26.3
+pandas==2.1.4
+scikit-learn==1.4.0
+pulp==2.7.0
+
+# OCR & Image Processing (PaddleOCR for multi-language support)
+paddlepaddle==2.6.0
+paddleocr==2.7.3
+opencv-python==4.9.0.80
+Pillow==10.2.0
+
+# Utilities
+rapidfuzz==3.14.1
