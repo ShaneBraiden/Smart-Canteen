@@ -17,7 +17,7 @@ A full-stack web application that extracts food items from canteen menu images, 
 - Backend: Flask 3, Python
 - Database: MongoDB
 - ML/Optimization: scikit-learn, PuLP
-- OCR: PaddleOCR + OpenCV
+- OCR: PaddleOCR + OpenCV, using the RTX 4050 GPU on supported Windows/CUDA 11.8 setups
 
 ## Quick Start
 

@@ -18,7 +18,11 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Python 3.11 or 3.12 is recommended for full OCR support. With Python 3.13, PaddleOCR/OpenCV combinations may fail due to NumPy ABI incompatibility.
+Python 3.11 or 3.12 is recommended for full OCR support. The OCR stack is configured to use the RTX 4050 GPU when available, and this project currently targets `paddlepaddle-gpu==3.3.1` with CUDA 11.8.
+
+If you are reinstalling the environment, keep the GPU wheel from the Paddle CUDA 11.8 index in place so PaddleOCR can use the RTX 4050 directly. On this workspace, OCR runs with `device='gpu:0'` and falls back to CPU only if the GPU runtime is unavailable.
+
+With Python 3.13, PaddleOCR/OpenCV combinations may fail due to NumPy ABI incompatibility.
 
 ### 3. Configure environment
 
@@ -53,6 +57,7 @@ Server URL: `http://localhost:8000`
 ## Behavior Notes
 
 - On first OCR use, PaddleOCR downloads model files.
+- OCR uses the RTX 4050 through Paddle GPU. The backend is configured for `device='gpu:0'`, so menu extraction runs on the GPU instead of the CPU when CUDA is available.
 - If OCR dependencies are unavailable, non-OCR APIs still work. OCR endpoints return `503` with a clear error.
 
 ## Quick API Checks

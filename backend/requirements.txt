@@ -26,7 +26,8 @@ scikit-learn==1.4.0
 pulp==2.7.0
 
 # OCR & Image Processing (PaddleOCR for multi-language support)
-paddlepaddle==3.3.1
+--extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cu118/
+paddlepaddle-gpu==3.3.1
 paddleocr==3.4.0
 opencv-contrib-python==4.10.0.84
 Pillow==10.2.0

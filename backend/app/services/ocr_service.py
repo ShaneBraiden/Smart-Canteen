@@ -61,12 +61,13 @@ def get_ocr_engine():
         # lang='en' for English, use 'devanagari' for Hindi, 'tamil', 'telugu' etc.
         # We use 'en' as default and 'multilingual' approach
         _ocr_engine = PaddleOCR(
-            use_angle_cls=True,  # Detect text orientation
-            lang='en',           # Primary language
-            use_gpu=False,       # Set to True if GPU available
-            show_log=False,      # Suppress logs
-            det_db_box_thresh=0.5,
-            rec_batch_num=6,
+            lang='en',
+            device='gpu:0',
+            text_det_box_thresh=0.5,
+            text_recognition_batch_size=6,
+            enable_mkldnn=False,
+            enable_hpi=False,
+            enable_cinn=False,
         )
     return _ocr_engine
 
@@ -236,6 +237,48 @@ class OCREngine:
             self._ocr = get_ocr_engine()
         return self._ocr
     
+    def _run_ocr(self, img: np.ndarray):
+        """Run OCR with backward/forward compatibility across PaddleOCR versions."""
+        try:
+            import inspect
+            ocr_sig = inspect.signature(self.ocr.ocr)
+            if 'cls' in ocr_sig.parameters:
+                return self.ocr.ocr(img, cls=True)
+        except Exception:
+            pass
+        return self.ocr.ocr(img)
+
+    def _parse_ocr_result(self, result):
+        """Normalize OCR result to a standard format"""
+        if not result or not result[0]:
+            return []
+        
+        parsed = []
+        if isinstance(result[0], dict):
+            res_dict = result[0]
+            texts = res_dict.get('rec_texts', [])
+            scores = res_dict.get('rec_scores', [])
+            polys = res_dict.get('rec_polys', [])
+            for i in range(len(texts)):
+                bbox = polys[i].tolist() if i < len(polys) and hasattr(polys[i], 'tolist') else []
+                parsed.append({
+                    'text': str(texts[i]),
+                    'confidence': float(scores[i]) if i < len(scores) else 1.0,
+                    'bbox': bbox
+                })
+        else:
+            for line in result[0]:
+                if isinstance(line, (list, tuple)) and len(line) >= 2:
+                    bbox = line[0]
+                    text = line[1][0]
+                    confidence = line[1][1]
+                    parsed.append({
+                        'text': str(text),
+                        'confidence': float(confidence),
+                        'bbox': bbox
+                    })
+        return parsed
+
     def extract_text(self, img: np.ndarray) -> str:
         """
         Extract text from image using PaddleOCR.
@@ -246,19 +289,9 @@ class OCREngine:
         Returns:
             Extracted text as single string
         """
-        result = self.ocr.ocr(img, cls=True)
-        
-        if not result or not result[0]:
-            return ""
-        
-        # Extract text from PaddleOCR result
-        lines = []
-        for line in result[0]:
-            if line and len(line) >= 2:
-                text = line[1][0]  # Text content
-                lines.append(text)
-        
-        return "\n".join(lines)
+        result = self._run_ocr(img)
+        parsed = self._parse_ocr_result(result)
+        return "\n".join([item['text'] for item in parsed])
     
     def extract_with_confidence(self, img: np.ndarray) -> Dict[str, Any]:
         """
@@ -267,9 +300,10 @@ class OCREngine:
         Returns:
             Dictionary with text, confidence data, and bounding boxes
         """
-        result = self.ocr.ocr(img, cls=True)
+        result = self._run_ocr(img)
+        parsed = self._parse_ocr_result(result)
         
-        if not result or not result[0]:
+        if not parsed:
             return {
                 'text': '',
                 'average_confidence': 0,
@@ -278,23 +312,9 @@ class OCREngine:
                 'raw_data': result
             }
         
-        lines = []
-        confidences = []
-        full_text_parts = []
-        
-        for line in result[0]:
-            if line and len(line) >= 2:
-                bbox = line[0]  # Bounding box coordinates
-                text = line[1][0]  # Text content
-                confidence = line[1][1]  # Confidence score
-                
-                lines.append({
-                    'text': text,
-                    'confidence': confidence,
-                    'bbox': bbox
-                })
-                confidences.append(confidence)
-                full_text_parts.append(text)
+        lines = parsed
+        confidences = [item['confidence'] for item in parsed]
+        full_text_parts = [item['text'] for item in parsed]
         
         avg_confidence = sum(confidences) / len(confidences) if confidences else 0
         
@@ -314,29 +334,25 @@ class OCREngine:
         Returns:
             List of text items with position and confidence
         """
-        result = self.ocr.ocr(img, cls=True)
-        
-        if not result or not result[0]:
-            return []
+        result = self._run_ocr(img)
+        parsed = self._parse_ocr_result(result)
         
         items = []
-        for line in result[0]:
-            if line and len(line) >= 2:
-                bbox = line[0]
-                text = line[1][0]
-                confidence = line[1][1]
-                
-                # Calculate center position
+        for item in parsed:
+            bbox = item['bbox']
+            if bbox and len(bbox) == 4:
                 x_center = sum(p[0] for p in bbox) / 4
                 y_center = sum(p[1] for p in bbox) / 4
+            else:
+                x_center, y_center = 0, 0
                 
-                items.append({
-                    'text': text,
-                    'confidence': confidence,
-                    'x': x_center,
-                    'y': y_center,
-                    'bbox': bbox
-                })
+            items.append({
+                'text': item['text'],
+                'confidence': item['confidence'],
+                'x': x_center,
+                'y': y_center,
+                'bbox': bbox
+            })
         
         # Sort by vertical position (top to bottom)
         items.sort(key=lambda x: x['y'])

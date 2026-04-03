@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 
@@ -24,9 +24,11 @@ class Settings(BaseSettings):
     OCR_USE_GPU: bool = False  # Set to True if GPU available
     OCR_LANG: str = "en"  # Default language (en, hi, ta, te, etc.)
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore",
+    )
 
 
 settings = Settings()

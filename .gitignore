@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs and local runtime files
+*.log
+backend/ocr_init_log.txt
+backend/old_engine.txt
+backend/paddle_args.txt
+backend/patch_ocr.py
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# OS/Editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Optional local docs workspace output
+docs/
