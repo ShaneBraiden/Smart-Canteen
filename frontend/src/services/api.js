@@ -57,23 +57,37 @@ export const userAPI = {
 
 // Menu APIs
 export const menuAPI = {
-  extractMenu: (file) => {
+  extractMenu: (file, replace = false) => {
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('replace', replace.toString())
     return api.post('/menu/extract', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
+  getScannedMenu: () => api.get('/menu/scanned'),
+  clearScannedMenu: () => api.delete('/menu/scanned'),
+  getScannedStats: () => api.get('/menu/scanned/stats'),
   searchFood: (query) => api.get(`/menu/search?query=${query}`),
   listItems: (params) => api.get('/menu/items', { params }),
   getStats: () => api.get('/menu/stats'),
   getCategories: () => api.get('/menu/categories'),
   getCuisines: () => api.get('/menu/cuisines'),
+  // Menu history
+  getHistory: () => api.get('/menu/history'),
+  getMenuById: (menuId) => api.get(`/menu/${menuId}`),
+  saveMenu: (name, items) => api.post('/menu/save', { name, items }),
+  deleteMenu: (menuId) => api.delete(`/menu/${menuId}`),
+  renameMenu: (menuId, name) => api.patch(`/menu/${menuId}/rename`, { name }),
 }
 
 // Meal Planning APIs
 export const mealAPI = {
-  generatePlan: (duration = '7') => api.post(`/meals/generate?duration=${duration}`),
+  generateFromScanned: (days = 1, menuId = null) => {
+    const payload = { days }
+    if (menuId) payload.menu_id = menuId
+    return api.post('/meals/generate-from-scanned', payload)
+  },
   getTodayPlan: () => api.get('/meals/today'),
   findSubstitutes: (itemName, maxPrice) => 
     api.post('/meals/substitute', { item_name: itemName, max_price: maxPrice }),

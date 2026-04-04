@@ -6,6 +6,8 @@ from app.services.user_service import user_service
 from app.services.ocr_service import ocr_engine
 from app.services.menu_parser import menu_parser
 from app.services.food_dataset import food_dataset
+from app.services.food_validator import food_validator
+from app.services.scanned_menu_service import scanned_menu_service
 
 menu_bp = Blueprint('menu', __name__)
 
@@ -32,7 +34,12 @@ def get_current_user():
 @menu_bp.route('/extract', methods=['POST'])
 @jwt_required()
 def extract_menu_from_image():
-    """Upload a menu image and extract food items with prices."""
+    """
+    Upload a menu image and extract food items with prices.
+    
+    OCR extracts text → ML validates nutrition → Items saved to user's DB.
+    Use GET /scanned to retrieve saved items.
+    """
     current_user = get_current_user()
     if not current_user:
         return jsonify({"detail": "User not found"}), 404
@@ -41,6 +48,9 @@ def extract_menu_from_image():
         return jsonify({"detail": "No file uploaded"}), 400
     
     file = request.files['file']
+    
+    # Check if we should replace existing items or merge
+    replace_items = request.form.get('replace', 'false').lower() == 'true'
     
     # Validate file type
     allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
@@ -61,40 +71,151 @@ def extract_menu_from_image():
         # Parse menu text
         extracted_items = menu_parser.parse_menu_text(ocr_result['text'])
         
-        # Map to nutrition database
-        mapped_items = []
+        # Build items list for saving
+        items_to_save = []
         for item in extracted_items:
-            match = food_dataset.fuzzy_match(item.name)
+            items_to_save.append({
+                'name': item.name,
+                'price': item.price
+            })
+        
+        # Save to user's scanned menu in MongoDB
+        user_id = str(current_user.id)
+        saved_menu = scanned_menu_service.add_scanned_items(
+            user_id=user_id,
+            extracted_items=items_to_save,
+            replace=replace_items
+        )
+        
+        # Build response with validated items from DB
+        validated_items = []
+        for item in saved_menu.items:
+            # Find matching extracted item for OCR confidence
+            ocr_conf = 0.8  # default
+            for ext_item in extracted_items:
+                if ext_item.name.lower() == item.name.lower():
+                    ocr_conf = ext_item.confidence
+                    break
             
-            mapped_items.append({
-                "extracted_name": item.name,
-                "extracted_price": item.price,
-                "matched_name": match.matched_item.name if match.matched_item else None,
-                "match_confidence": match.confidence,
-                "nutrition": match.matched_item.to_dict() if match.matched_item else None,
-                "alternatives": [name for name, _ in match.alternatives]
+            validated_items.append({
+                "name": item.name,
+                "cleaned_name": item.cleaned_name,
+                "price": item.price,
+                "calories": item.calories,
+                "protein": item.protein,
+                "carbs": item.carbs,
+                "fats": item.fats,
+                "is_veg": item.is_veg,
+                "category": item.category,
+                "validation_source": item.validation_source,
+                "confidence": item.confidence,
+                "database_match": item.database_match,
+                "ocr_confidence": ocr_conf
             })
         
         return jsonify({
             "success": True,
+            "message": f"Scanned {len(extracted_items)} items, saved {len(saved_menu.items)} to your menu",
             "ocr_confidence": ocr_result['average_confidence'],
-            "items_found": len(extracted_items),
-            "extracted_items": [
-                {
-                    "name": item.name,
-                    "price": item.price,
-                    "confidence": item.confidence,
-                    "raw_text": item.raw_text
-                } for item in extracted_items
-            ],
-            "mapped_items": mapped_items,
-            "preprocessing_used": ocr_result.get('preprocessing_used', True)
+            "items_extracted": len(extracted_items),
+            "items_saved": len(saved_menu.items),
+            "validated_items": validated_items,
+            "menu_stats": scanned_menu_service.get_menu_stats(user_id),
+            "preprocessing_used": ocr_result.get('preprocessing_used', True),
+            "model_status": food_validator.get_model_status()
         })
         
     except RuntimeError as e:
         return jsonify({"detail": f"OCR is unavailable: {str(e)}"}), 503
     except Exception as e:
         return jsonify({"detail": f"OCR processing failed: {str(e)}"}), 500
+
+
+@menu_bp.route('/scanned', methods=['GET'])
+@jwt_required()
+def get_scanned_menu():
+    """
+    Get user's saved scanned menu items.
+    
+    These are the items validated by ML and saved to database.
+    Use these items for meal plan generation.
+    """
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"detail": "User not found"}), 404
+    
+    user_id = str(current_user.id)
+    menu = scanned_menu_service.get_user_menu(user_id)
+    
+    if not menu or not menu.items:
+        return jsonify({
+            "success": True,
+            "items": [],
+            "total_items": 0,
+            "message": "No scanned menu items. Upload a menu image first."
+        })
+    
+    return jsonify({
+        "success": True,
+        "items": [item.to_dict() for item in menu.items],
+        "total_items": len(menu.items),
+        "stats": scanned_menu_service.get_menu_stats(user_id),
+        "last_scan": menu.last_scan_at.isoformat() if menu.last_scan_at else None
+    })
+
+
+@menu_bp.route('/scanned', methods=['DELETE'])
+@jwt_required()
+def clear_scanned_menu():
+    """Clear all items from user's scanned menu."""
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"detail": "User not found"}), 404
+    
+    user_id = str(current_user.id)
+    scanned_menu_service.clear_menu(user_id)
+    
+    return jsonify({
+        "success": True,
+        "message": "Scanned menu cleared"
+    })
+
+
+@menu_bp.route('/scanned/<item_name>', methods=['DELETE'])
+@jwt_required()
+def remove_scanned_item(item_name: str):
+    """Remove a specific item from scanned menu."""
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"detail": "User not found"}), 404
+    
+    user_id = str(current_user.id)
+    removed = scanned_menu_service.remove_item(user_id, item_name)
+    
+    if not removed:
+        return jsonify({"detail": "Item not found in menu"}), 404
+    
+    return jsonify({
+        "success": True,
+        "message": f"Removed '{item_name}' from menu"
+    })
+
+
+@menu_bp.route('/scanned/stats', methods=['GET'])
+@jwt_required()
+def get_scanned_menu_stats():
+    """Get statistics about user's scanned menu."""
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"detail": "User not found"}), 404
+    
+    user_id = str(current_user.id)
+    stats = scanned_menu_service.get_menu_stats(user_id)
+    
+    return jsonify({
+        "success": True,
+        "stats": stats
+    })
 
 
 @menu_bp.route('/search', methods=['GET'])
@@ -176,3 +297,212 @@ def get_cuisines():
     """Get list of cuisines."""
     stats = food_dataset.get_stats()
     return jsonify({"cuisines": stats['cuisines']})
+
+
+@menu_bp.route('/validate', methods=['POST'])
+@jwt_required()
+def validate_food_items():
+    """
+    Validate food items using ML model and database matching.
+    
+    Request body:
+        {
+            "items": ["idli", "masala dosa", "unknown dish"]
+        }
+    
+    Returns validated nutrition info with confidence scores.
+    """
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"detail": "User not found"}), 404
+    
+    data = request.get_json()
+    if not data or 'items' not in data:
+        return jsonify({"detail": "Missing 'items' in request body"}), 400
+    
+    items = data['items']
+    if not isinstance(items, list):
+        return jsonify({"detail": "'items' must be a list of food names"}), 400
+    
+    if len(items) > 50:
+        return jsonify({"detail": "Maximum 50 items per request"}), 400
+    
+    # Validate each item
+    results = food_validator.validate_batch(items)
+    
+    return jsonify({
+        "success": True,
+        "count": len(results),
+        "validated_items": [r.to_dict() for r in results],
+        "model_status": food_validator.get_model_status()
+    })
+
+
+@menu_bp.route('/validate/single', methods=['GET'])
+@jwt_required()
+def validate_single_food():
+    """
+    Validate a single food item by query parameter.
+    
+    Query params:
+        food: The food name to validate
+    
+    Example: /api/menu/validate/single?food=masala+dosa
+    """
+    food_name = request.args.get('food', '')
+    
+    if not food_name:
+        return jsonify({"detail": "Missing 'food' query parameter"}), 400
+    
+    result = food_validator.validate(food_name)
+    
+    return jsonify({
+        "success": True,
+        "validation": result.to_dict()
+    })
+
+
+@menu_bp.route('/model/status', methods=['GET'])
+def get_model_status():
+    """Get the status of the ML nutrition estimator model."""
+    return jsonify(food_validator.get_model_status())
+
+
+# ==================== Menu History Endpoints ====================
+
+@menu_bp.route('/history', methods=['GET'])
+@jwt_required()
+def get_menu_history():
+    """
+    Get all saved menus for the user (history).
+    
+    Returns list of menus with summary info (not full item details).
+    """
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"detail": "User not found"}), 404
+    
+    user_id = str(current_user.id)
+    menus = scanned_menu_service.get_user_menus(user_id)
+    
+    return jsonify({
+        "success": True,
+        "menus": [menu.to_summary() for menu in menus],
+        "total": len(menus)
+    })
+
+
+@menu_bp.route('/save', methods=['POST'])
+@jwt_required()
+def save_menu_with_name():
+    """
+    Save scanned menu items with a user-given name.
+    
+    Request body:
+        {
+            "name": "College Canteen Menu",
+            "items": [{"name": "Idli", "price": 20}, ...]
+        }
+    """
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"detail": "User not found"}), 404
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({"detail": "Missing request body"}), 400
+    
+    menu_name = data.get('name', '').strip()
+    if not menu_name:
+        return jsonify({"detail": "Menu name is required"}), 400
+    
+    items = data.get('items', [])
+    if not items:
+        return jsonify({"detail": "No items to save"}), 400
+    
+    user_id = str(current_user.id)
+    saved_menu = scanned_menu_service.save_menu_with_name(
+        user_id=user_id,
+        extracted_items=items,
+        menu_name=menu_name
+    )
+    
+    return jsonify({
+        "success": True,
+        "message": f"Menu '{menu_name}' saved with {len(saved_menu.items)} items",
+        "menu": saved_menu.to_summary(),
+        "menu_id": str(saved_menu.id)
+    })
+
+
+@menu_bp.route('/<menu_id>', methods=['GET'])
+@jwt_required()
+def get_menu_by_id(menu_id: str):
+    """Get a specific menu by ID with full item details."""
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"detail": "User not found"}), 404
+    
+    user_id = str(current_user.id)
+    menu = scanned_menu_service.get_menu_by_id(menu_id, user_id)
+    
+    if not menu:
+        return jsonify({"detail": "Menu not found"}), 404
+    
+    return jsonify({
+        "success": True,
+        "menu": {
+            "id": str(menu.id),
+            "name": menu.name,
+            "items": [item.to_dict() for item in menu.items],
+            "total_items": len(menu.items),
+            "created_at": menu.created_at.isoformat() if menu.created_at else None,
+            "last_scan_at": menu.last_scan_at.isoformat() if menu.last_scan_at else None
+        }
+    })
+
+
+@menu_bp.route('/<menu_id>', methods=['DELETE'])
+@jwt_required()
+def delete_menu(menu_id: str):
+    """Delete a specific menu."""
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"detail": "User not found"}), 404
+    
+    user_id = str(current_user.id)
+    deleted = scanned_menu_service.delete_menu(menu_id, user_id)
+    
+    if not deleted:
+        return jsonify({"detail": "Menu not found"}), 404
+    
+    return jsonify({
+        "success": True,
+        "message": "Menu deleted"
+    })
+
+
+@menu_bp.route('/<menu_id>/rename', methods=['PATCH'])
+@jwt_required()
+def rename_menu(menu_id: str):
+    """Rename a menu."""
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"detail": "User not found"}), 404
+    
+    data = request.get_json()
+    new_name = data.get('name', '').strip() if data else ''
+    
+    if not new_name:
+        return jsonify({"detail": "New name is required"}), 400
+    
+    user_id = str(current_user.id)
+    renamed = scanned_menu_service.rename_menu(menu_id, user_id, new_name)
+    
+    if not renamed:
+        return jsonify({"detail": "Menu not found"}), 404
+    
+    return jsonify({
+        "success": True,
+        "message": f"Menu renamed to '{new_name}'"
+    })

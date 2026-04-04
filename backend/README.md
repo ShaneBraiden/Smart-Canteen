@@ -93,19 +93,29 @@ curl -X POST http://localhost:8000/api/v1/auth/login/json -H "Content-Type: appl
 
 ### Menu and OCR
 
-- `POST /api/v1/menu/extract`
-- `GET /api/v1/menu/search`
-- `GET /api/v1/menu/items`
-- `GET /api/v1/menu/stats`
-- `GET /api/v1/menu/categories`
-- `GET /api/v1/menu/cuisines`
+- `POST /api/v1/menu/extract` — Upload menu image, extract items with OCR, validate nutrition, **save to user's MongoDB**
+- `GET /api/v1/menu/scanned` — **Get user's saved scanned menu items**
+- `DELETE /api/v1/menu/scanned` — **Clear all scanned menu items**
+- `DELETE /api/v1/menu/scanned/<item_name>` — **Remove specific item from scanned menu**
+- `GET /api/v1/menu/scanned/stats` — **Get statistics about scanned menu**
+- `GET /api/v1/menu/search` — Search food database
+- `GET /api/v1/menu/items` — List food items with filters
+- `GET /api/v1/menu/stats` — Dataset statistics
+- `GET /api/v1/menu/categories` — List categories
+- `GET /api/v1/menu/cuisines` — List cuisines
+- `POST /api/v1/menu/validate` — Validate batch of food names (ML + database)
+- `GET /api/v1/menu/validate/single?food=...` — Validate single food item
+- `GET /api/v1/menu/model/status` — Check ML model status
 
 ### Meals
 
-- `POST /api/v1/meals/generate`
-- `GET /api/v1/meals/today`
-- `POST /api/v1/meals/substitute`
-- `GET /api/v1/meals/recommendations`
+- `POST /api/v1/meals/generate` — Generate meal plan from database (legacy)
+- `POST /api/v1/meals/generate-from-scanned` — **Generate meal plan from SAVED scanned menu (MongoDB)**
+- `POST /api/v1/meals/generate-from-menu` — Generate meal plan from inline menu items (legacy)
+- `POST /api/v1/meals/validate-menu` — Validate menu items before planning
+- `GET /api/v1/meals/today` — Get today's meal plan
+- `POST /api/v1/meals/substitute` — Find item substitutes
+- `GET /api/v1/meals/recommendations` — Get quick recommendations
 
 ### Recommendations
 
@@ -125,9 +135,75 @@ backend/
 |   |-- models/
 |   |-- schemas/
 |   |-- services/
+|   |   |-- food_dataset.py      # Food database service
+|   |   |-- food_validator.py    # ML-based food validation
+|   |   |-- menu_optimizer.py    # Menu-based meal planning with ML
+|   |   |-- ocr_service.py       # PaddleOCR integration
+|   |   `-- menu_parser.py       # Menu text parsing
 |   `-- ml/
+|       |-- train_nutrition_estimator.py  # Training script
+|       |-- nutrition_estimator.joblib     # Trained model
+|       `-- recommender.py                 # Recommendation engine
 |-- .env.example
 |-- requirements.txt
 |-- run.py
 `-- README.md
 ```
+
+## ML Models
+
+### Nutrition Estimator
+
+The nutrition estimator model predicts nutritional values (calories, protein, carbs, fats) from food names. This is used to:
+- Estimate nutrition for OCR-scanned foods not in the database
+- Provide fallback predictions for unknown items
+- Validate and enrich menu extraction results
+
+**Training the model**: See `../docs/ML_TRAINING.md` for detailed instructions.
+
+**Model details**:
+- Algorithm: TF-IDF (char n-grams 2-5) + Ridge Multi-Output Regression
+- Training data: 1639 unique food items from 3 datasets
+- Performance (MAE): Calories ≈96 kcal, Protein ≈3g, Carbs ≈10g, Fats ≈9g
+- Location: `backend/app/ml/nutrition_estimator.joblib`
+
+## Meal Planning Workflow
+
+The FDA Smart Canteen uses a **menu-first** workflow where meal plans are generated ONLY from the user's scanned menu:
+
+### Step 1: Scan Menu
+```bash
+# Upload menu image
+curl -X POST http://localhost:8000/api/v1/menu/extract \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@canteen_menu.jpg"
+```
+
+This:
+1. OCR extracts text from the image (PaddleOCR)
+2. ML model validates/predicts nutrition for each item
+3. Items are **saved to MongoDB** in `scanned_menus` collection
+
+### Step 2: View Saved Menu
+```bash
+# Get saved scanned items
+curl http://localhost:8000/api/v1/menu/scanned \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Step 3: Generate Meal Plan from Saved Menu
+```bash
+# Generate meal plan from YOUR scanned menu (not database)
+curl -X POST http://localhost:8000/api/v1/meals/generate-from-scanned \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"days": 1}'
+```
+
+This uses **only the items you scanned** — not the static food database.
+
+### Key Points
+- Each user has their own scanned menu in MongoDB
+- Menu items persist until cleared or replaced
+- Meal plans are optimized using PuLP linear programming
+- Nutrition is either from database match or ML prediction

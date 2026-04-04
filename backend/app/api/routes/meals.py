@@ -6,6 +6,8 @@ from app.models.user import MealSlot
 from app.services.user_service import user_service
 from app.services.optimizer import budget_optimizer
 from app.services.food_dataset import food_dataset
+from app.services.menu_optimizer import menu_meal_optimizer
+from app.services.scanned_menu_service import scanned_menu_service
 
 meals_bp = Blueprint('meals', __name__)
 
@@ -262,3 +264,205 @@ def get_quick_recommendations():
             } for i in items[:10]
         ]
     })
+
+
+@meals_bp.route('/generate-from-menu', methods=['POST'])
+@jwt_required()
+def generate_meal_plan_from_menu():
+    """
+    Generate an optimized meal plan from uploaded menu items.
+    
+    Uses ML model for nutrition prediction - does NOT use the static database.
+    Only items from the uploaded menu are considered.
+    
+    Request body:
+        {
+            "menu_items": [
+                {"name": "Masala Dosa", "price": 45},
+                {"name": "Idli (2 pcs)", "price": 25},
+                {"name": "Chicken Biryani", "price": 120}
+            ],
+            "days": 1  // Optional, default 1
+        }
+    
+    Returns optimized meal plan with ML-predicted nutrition.
+    """
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"detail": "User not found"}), 404
+    
+    if not current_user.cached_target_calories:
+        return jsonify({
+            "detail": "Please complete your profile first. Required: age, gender, height, weight"
+        }), 400
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({"detail": "Invalid request data"}), 400
+    
+    menu_items = data.get('menu_items', [])
+    num_days = int(data.get('days', 1))
+    
+    if not menu_items:
+        return jsonify({"detail": "No menu_items provided"}), 400
+    
+    if not isinstance(menu_items, list):
+        return jsonify({"detail": "menu_items must be a list"}), 400
+    
+    if num_days < 1 or num_days > 7:
+        return jsonify({"detail": "days must be between 1 and 7"}), 400
+    
+    # Generate plan from menu items using ML
+    result = menu_meal_optimizer.generate_plan_from_menu(
+        menu_items=menu_items,
+        user=current_user,
+        num_days=num_days
+    )
+    
+    if not result.success:
+        return jsonify({"detail": result.message}), 400
+    
+    response = result.to_dict()
+    
+    # Add budget usage
+    daily_budget = current_user.budget_settings.daily_budget
+    total_budget = daily_budget * num_days
+    response['summary']['budget_used_pct'] = round((result.total_cost / total_budget) * 100, 1)
+    response['summary']['target_calories'] = current_user.cached_target_calories
+    
+    return jsonify(response)
+
+
+@meals_bp.route('/validate-menu', methods=['POST'])
+@jwt_required()
+def validate_menu_for_planning():
+    """
+    Validate menu items before generating a meal plan.
+    
+    Returns nutrition info and confidence for each item.
+    
+    Request body:
+        {
+            "menu_items": [
+                {"name": "Masala Dosa", "price": 45},
+                {"name": "Unknown Dish"}
+            ]
+        }
+    """
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"detail": "User not found"}), 404
+    
+    data = request.get_json()
+    if not data or 'menu_items' not in data:
+        return jsonify({"detail": "menu_items required"}), 400
+    
+    menu_items = data.get('menu_items', [])
+    
+    # Validate each item
+    validated = menu_meal_optimizer.validate_menu_items(menu_items)
+    
+    # Categorize by confidence
+    high_conf = [i for i in validated if i.confidence >= 0.85]
+    medium_conf = [i for i in validated if 0.7 <= i.confidence < 0.85]
+    low_conf = [i for i in validated if i.confidence < 0.7]
+    
+    return jsonify({
+        "total_items": len(validated),
+        "high_confidence": len(high_conf),
+        "medium_confidence": len(medium_conf),
+        "low_confidence": len(low_conf),
+        "items": [item.to_dict() for item in validated],
+        "ready_for_planning": len(validated) >= 3,
+        "message": f"Validated {len(validated)} items. {len(high_conf)} have high confidence nutrition data."
+    })
+
+
+@meals_bp.route('/generate-from-scanned', methods=['POST'])
+@jwt_required()
+def generate_meal_plan_from_scanned_menu():
+    """
+    Generate an optimized meal plan from user's SAVED scanned menu.
+    
+    Workflow:
+    1. User scans menu image → OCR extracts text → ML validates → saved to DB
+    2. This endpoint reads from that saved DB and generates meal plan
+    
+    Only items from the user's scanned menu (MongoDB) are used.
+    
+    Request body (optional):
+        {
+            "days": 1  // Optional, default 1 (max 7)
+        }
+    
+    Returns optimized meal plan using ONLY items from user's scanned menu.
+    """
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"detail": "User not found"}), 404
+    
+    if not current_user.cached_target_calories:
+        return jsonify({
+            "detail": "Please complete your profile first. Required: age, gender, height, weight"
+        }), 400
+    
+    user_id = str(current_user.id)
+    
+    # Get menu_id from request body (optional - uses most recent if not provided)
+    data = request.get_json() or {}
+    menu_id = data.get('menu_id')
+    
+    # Get user's saved scanned menu from MongoDB
+    menu_items_db = scanned_menu_service.get_menu_items(user_id, menu_id)
+    
+    if not menu_items_db:
+        return jsonify({
+            "detail": "No scanned menu items found. Please scan a menu first using POST /api/v1/menu/extract",
+            "hint": "Upload a menu image to scan food items before generating a meal plan"
+        }), 400
+    
+    num_days = int(data.get('days', 1))
+    
+    if num_days < 1 or num_days > 7:
+        return jsonify({"detail": "days must be between 1 and 7"}), 400
+    
+    # Convert saved DB items to the format expected by menu_optimizer
+    menu_items = []
+    for item in menu_items_db:
+        menu_items.append({
+            'name': item.name,
+            'price': item.price,
+            # Include pre-validated nutrition so ML doesn't re-predict
+            'pre_validated': {
+                'calories': item.calories,
+                'protein': item.protein,
+                'carbs': item.carbs,
+                'fats': item.fats,
+                'is_veg': item.is_veg,
+                'category': item.category,
+                'confidence': item.confidence,
+                'source': item.validation_source
+            }
+        })
+    
+    # Generate plan from saved menu items
+    result = menu_meal_optimizer.generate_plan_from_menu(
+        menu_items=menu_items,
+        user=current_user,
+        num_days=num_days
+    )
+    
+    if not result.success:
+        return jsonify({"detail": result.message}), 400
+    
+    response = result.to_dict()
+    
+    # Add budget usage and menu stats
+    daily_budget = current_user.budget_settings.daily_budget
+    total_budget = daily_budget * num_days
+    response['summary']['budget_used_pct'] = round((result.total_cost / total_budget) * 100, 1)
+    response['summary']['target_calories'] = current_user.cached_target_calories
+    response['summary']['menu_items_available'] = len(menu_items_db)
+    response['summary']['menu_stats'] = scanned_menu_service.get_menu_stats(user_id)
+    
+    return jsonify(response)
